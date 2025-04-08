@@ -1,0 +1,429 @@
+
+# Grade Guardian - Backend Integration Guide
+
+This document outlines how to integrate a Flask backend with the Grade Guardian frontend React application.
+
+## Overview of the Frontend Structure
+
+The frontend is built with React and consists of the following main pages:
+1. Home Page (`HomePage.tsx`)
+2. Teacher Dashboard (`TeacherDashboard.tsx`)
+3. Student Dashboard (`StudentDashboard.tsx`)
+
+## Backend API Endpoints Required
+
+### Authentication
+- `POST /api/auth/login` - For user login (both teachers and students)
+- `POST /api/auth/logout` - For user logout
+- `GET /api/auth/me` - To get current user information
+
+### Teacher APIs
+- `POST /api/assignments` - Create a new assignment
+- `GET /api/assignments` - Get all assignments created by a teacher
+- `GET /api/submissions` - Get all submissions for a teacher
+- `GET /api/submissions/:id` - Get a specific submission
+- `POST /api/submissions/:id/evaluate` - Manually evaluate a submission
+- `POST /api/submissions/:id/evaluate-ai` - Use AI to evaluate a submission
+- `GET /api/teacher/stats` - Get teacher dashboard statistics
+
+### Student APIs
+- `GET /api/student/assignments` - Get all assignments for a student
+- `GET /api/student/submissions` - Get all submissions made by a student
+- `POST /api/assignments/:id/submit` - Submit an assignment
+- `POST /api/questions` - Submit a question to AI
+- `GET /api/student/stats` - Get student dashboard statistics
+
+### Plagiarism Detection
+- `POST /api/plagiarism/check` - Check submission for plagiarism
+
+## Integration Steps
+
+### 1. Setup Flask API
+
+Create a Flask application with the following structure:
+```
+backend/
+  ├── app.py             # Main app entry point
+  ├── config.py          # Configuration settings
+  ├── models/            # Database models
+  │   ├── __init__.py
+  │   ├── user.py
+  │   ├── assignment.py
+  │   └── submission.py
+  ├── routes/            # API routes
+  │   ├── __init__.py
+  │   ├── auth.py
+  │   ├── teacher.py
+  │   └── student.py
+  └── services/          # Business logic
+      ├── __init__.py
+      ├── evaluation.py
+      ├── plagiarism.py
+      └── ai.py
+```
+
+### 2. Enable CORS
+
+Make sure to enable CORS in your Flask application to allow requests from your React frontend:
+
+```python
+from flask import Flask
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+```
+
+### 3. Create API Routes
+
+Each endpoint should return JSON data in a format that matches the frontend models. For example, the assignment structure should match the TypeScript interface in the frontend:
+
+```python
+@app.route('/api/assignments', methods=['GET'])
+def get_assignments():
+    # Query database or service to get assignments
+    assignments = [
+        {
+            "id": "1",
+            "title": "Introduction to React",
+            "description": "Create a simple React application",
+            "deadline": "2025-04-15T23:59:59",
+            "teacherId": "teacher1",
+            "createdAt": "2025-04-01T10:00:00"
+        }
+        # More assignments...
+    ]
+    return jsonify(assignments)
+```
+
+### 4. Implement File Handling
+
+For file uploads (assignment submissions and resources):
+
+```python
+@app.route('/api/assignments/<assignment_id>/submit', methods=['POST'])
+def submit_assignment(assignment_id):
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    # Save file and create submission record
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
+    
+    # Create submission in database
+    # ...
+    
+    return jsonify({'message': 'Submission successful'})
+```
+
+### 5. Implement Authentication
+
+Use JWT tokens for authentication:
+
+```python
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # Change this!
+jwt = JWTManager(app)
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    
+    # Validate credentials against database
+    # ...
+    
+    # Create access token
+    access_token = create_access_token(identity=user_id)
+    return jsonify(access_token=access_token, role=user_role)
+
+@app.route('/api/auth/me', methods=['GET'])
+@jwt_required()
+def get_user():
+    current_user_id = get_jwt_identity()
+    # Get user information from database
+    # ...
+    return jsonify(user_info)
+```
+
+### 6. Implement AI and Plagiarism Services
+
+For the AI evaluation and plagiarism detection features:
+
+```python
+@app.route('/api/submissions/<submission_id>/evaluate-ai', methods=['POST'])
+@jwt_required()
+def evaluate_with_ai(submission_id):
+    # Get submission content
+    submission = get_submission(submission_id)
+    
+    # Call AI service
+    # You might use OpenAI API, Hugging Face, or another AI service
+    evaluation_result = ai_service.evaluate(submission.content)
+    
+    # Update submission with evaluation
+    update_submission(submission_id, evaluation_result)
+    
+    return jsonify(evaluation_result)
+
+@app.route('/api/plagiarism/check', methods=['POST'])
+@jwt_required()
+def check_plagiarism():
+    data = request.get_json()
+    content = data.get('content')
+    
+    # Use plagiarism detection service
+    # You might use a library like Copyleaks or a custom solution
+    plagiarism_result = plagiarism_service.check(content)
+    
+    return jsonify(plagiarism_result)
+```
+
+### 7. Frontend API Integration
+
+To connect the frontend with your Flask backend, create an API client in the React app:
+
+1. Create a new file `src/services/api.ts`:
+
+```typescript
+// Base API URL
+const API_BASE_URL = 'http://localhost:5000/api';
+
+// Get auth token from localStorage
+const getToken = () => localStorage.getItem('token');
+
+// Helper for making authenticated requests
+const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+  const token = getToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options.headers,
+  };
+  
+  const response = await fetch(`${API_BASE_URL}${url}`, {
+    ...options,
+    headers,
+  });
+  
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// API client object
+export const api = {
+  // Auth
+  login: (email: string, password: string) => 
+    fetchWithAuth('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
+  
+  logout: () => fetchWithAuth('/auth/logout', { method: 'POST' }),
+  
+  getCurrentUser: () => fetchWithAuth('/auth/me'),
+  
+  // Teacher endpoints
+  createAssignment: (assignmentData: any) => 
+    fetchWithAuth('/assignments', {
+      method: 'POST',
+      body: JSON.stringify(assignmentData),
+    }),
+  
+  getTeacherAssignments: () => fetchWithAuth('/assignments'),
+  
+  getSubmissions: () => fetchWithAuth('/submissions'),
+  
+  getSubmission: (id: string) => fetchWithAuth(`/submissions/${id}`),
+  
+  evaluateSubmission: (id: string, evaluation: any) =>
+    fetchWithAuth(`/submissions/${id}/evaluate`, {
+      method: 'POST',
+      body: JSON.stringify(evaluation),
+    }),
+  
+  evaluateWithAI: (id: string) =>
+    fetchWithAuth(`/submissions/${id}/evaluate-ai`, { method: 'POST' }),
+  
+  getTeacherStats: () => fetchWithAuth('/teacher/stats'),
+  
+  // Student endpoints
+  getStudentAssignments: () => fetchWithAuth('/student/assignments'),
+  
+  getStudentSubmissions: () => fetchWithAuth('/student/submissions'),
+  
+  submitAssignment: (id: string, formData: FormData) => {
+    const token = getToken();
+    return fetch(`${API_BASE_URL}/assignments/${id}/submit`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(response => {
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      return response.json();
+    });
+  },
+  
+  submitQuestion: (question: any) =>
+    fetchWithAuth('/questions', {
+      method: 'POST',
+      body: JSON.stringify(question),
+    }),
+  
+  getStudentStats: () => fetchWithAuth('/student/stats'),
+  
+  // Plagiarism detection
+  checkPlagiarism: (content: string) =>
+    fetchWithAuth('/plagiarism/check', {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+};
+```
+
+2. Then update your components to use this API client instead of mock data.
+
+### 8. Authentication State Management
+
+Create a context to manage authentication state:
+
+```typescript
+// src/contexts/AuthContext.tsx
+
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { api } from '../services/api';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'teacher' | 'student';
+}
+
+interface AuthContextType {
+  user: User | null;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        if (localStorage.getItem('token')) {
+          const userData = await api.getCurrentUser();
+          setUser(userData);
+        }
+      } catch (error) {
+        localStorage.removeItem('token');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const response = await api.login(email, password);
+      localStorage.setItem('token', response.access_token);
+      const userData = await api.getCurrentUser();
+      setUser(userData);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    setIsLoading(true);
+    try {
+      await api.logout();
+    } finally {
+      localStorage.removeItem('token');
+      setUser(null);
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+```
+
+Then wrap your App component with this provider.
+
+## Additional Considerations
+
+### Error Handling
+
+Implement proper error handling on both frontend and backend:
+
+1. Flask backend should return appropriate HTTP status codes and error messages
+2. React frontend should catch errors and display user-friendly messages
+
+### Security
+
+1. Store sensitive configuration in environment variables
+2. Implement proper input validation on both frontend and backend
+3. Use HTTPS in production
+4. Set JWT expiration and implement token refresh if needed
+
+### AI Integration
+
+For the AI evaluation and question answering features, you can integrate with:
+- OpenAI API (GPT models)
+- Hugging Face models
+- Google Vertex AI
+- Or any other AI service that provides relevant capabilities
+
+### Plagiarism Detection
+
+For plagiarism detection:
+1. Implement your own algorithm for comparing submissions
+2. Use an existing library or service
+3. For code submissions, consider tools like MOSS (Measure of Software Similarity)
+
+### Testing
+
+Make sure to implement tests for your Flask backend:
+1. Unit tests for individual functions
+2. Integration tests for API endpoints
+3. Consider using Pytest for Python testing
+
+## Deployment Considerations
+
+1. Deploy Flask backend and React frontend separately
+2. Configure CORS for your production domains
+3. Set up a database (PostgreSQL recommended)
+4. Consider using Docker for containerization
+5. Set up proper CI/CD pipeline
