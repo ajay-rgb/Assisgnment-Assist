@@ -1,8 +1,5 @@
-# Welcome to your Lovable project
+# Welcome to your Assignment-Assist
 
-## Project info
-
-**URL**: https://lovable.dev/projects/2cd2dff3-31b0-4fad-9825-dcc4f2498575
 
 ## How can I edit this code?
 
