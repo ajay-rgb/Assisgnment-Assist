@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { Assignment, Submission } from '../types';
 import PlagiarismIndicator from './PlagiarismIndicator';
+import { addSubmissionToStorage } from '../utils/localStorage';
+import { useToast } from "@/hooks/use-toast";
 
 interface StudentAssignmentListProps {
   assignments: Assignment[];
@@ -18,6 +20,7 @@ const StudentAssignmentList: React.FC<StudentAssignmentListProps> = ({
   const [selectedFile, setSelectedFile] = useState<{ [key: string]: File | null }>({});
   const [uploading, setUploading] = useState<{ [key: string]: boolean }>({});
   const [uploadSuccess, setUploadSuccess] = useState<{ [key: string]: boolean }>({});
+  const { toast } = useToast();
 
   // Handle file selection
   const handleFileChange = (assignmentId: string, file: File | null) => {
@@ -31,10 +34,26 @@ const StudentAssignmentList: React.FC<StudentAssignmentListProps> = ({
   const handleSubmit = (assignmentId: string) => {
     setUploading(prev => ({ ...prev, [assignmentId]: true }));
     
-    // Mock API call
+    // Create submission object
+    const newSubmission: Submission = {
+      id: `submission_${Date.now()}`,
+      assignmentId: assignmentId,
+      studentId: 'student1', // Mock student ID
+      submissionDate: new Date().toISOString(),
+      fileUrl: selectedFile[assignmentId]?.name || 'unknown',
+      status: 'submitted',
+    };
+    
+    // Add submission to localStorage
     setTimeout(() => {
+      addSubmissionToStorage(newSubmission);
       setUploading(prev => ({ ...prev, [assignmentId]: false }));
       setUploadSuccess(prev => ({ ...prev, [assignmentId]: true }));
+      
+      toast({
+        title: "Assignment Submitted",
+        description: "Your assignment has been submitted successfully.",
+      });
       
       // Reset after 3 seconds
       setTimeout(() => {

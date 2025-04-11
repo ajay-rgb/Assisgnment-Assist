@@ -1,26 +1,36 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import StudentAssignmentList from '../components/StudentAssignmentList';
 import QuestionSection from '../components/QuestionSection';
-import { mockAssignments, mockSubmissions } from '../utils/mockData';
+import { getAssignmentsFromStorage, getSubmissionsFromStorage } from '../utils/localStorage';
+import { Assignment, Submission } from '../types';
 
 // Student dashboard page component
 const StudentDashboard: React.FC = () => {
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const studentId = 'student1'; // Mock student ID
+  
+  useEffect(() => {
+    // Load assignments and submissions from localStorage
+    const storedAssignments = getAssignmentsFromStorage();
+    const storedSubmissions = getSubmissionsFromStorage().filter(sub => sub.studentId === studentId);
+    
+    setAssignments(storedAssignments);
+    setSubmissions(storedSubmissions);
+  }, []);
+
   // Filter assignments that have submissions
-  const submittedAssignmentIds = mockSubmissions
-    .filter(sub => sub.studentId === 'student1')
+  const submittedAssignmentIds = submissions
     .map(sub => sub.assignmentId);
     
-  const submittedAssignments = mockAssignments
+  const submittedAssignments = assignments
     .filter(assignment => submittedAssignmentIds.includes(assignment.id));
     
-  const pendingAssignments = mockAssignments
+  const pendingAssignments = assignments
     .filter(assignment => !submittedAssignmentIds.includes(assignment.id));
-    
-  const studentSubmissions = mockSubmissions
-    .filter(sub => sub.studentId === 'student1');
 
   return (
     <div>
@@ -46,12 +56,13 @@ const StudentDashboard: React.FC = () => {
           <div className="stat-card">
             <div className="stat-title">Average Grade</div>
             <div className="stat-value">
-              {Math.round(
-                studentSubmissions
-                  .filter(sub => sub.grade !== undefined)
-                  .reduce((acc, sub) => acc + (sub.grade || 0), 0) / 
-                  studentSubmissions.filter(sub => sub.grade !== undefined).length
-              )}%
+              {submissions.length > 0 ?
+                Math.round(
+                  submissions
+                    .filter(sub => sub.grade !== undefined)
+                    .reduce((acc, sub) => acc + (sub.grade || 0), 0) / 
+                    Math.max(1, submissions.filter(sub => sub.grade !== undefined).length)
+                ) : 0}%
             </div>
           </div>
           
@@ -76,7 +87,7 @@ const StudentDashboard: React.FC = () => {
             
             <StudentAssignmentList 
               assignments={submittedAssignments} 
-              submissions={studentSubmissions}
+              submissions={submissions}
               isPending={false} 
             />
           </div>

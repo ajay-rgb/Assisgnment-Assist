@@ -1,29 +1,35 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AssignmentUpload from '../components/AssignmentUpload';
 import AssignmentEvaluation from '../components/AssignmentEvaluation';
 import PerformanceTable from '../components/PerformanceTable';
-import { mockSubmissions, mockPerformanceData } from '../utils/mockData';
-import { getAssignmentsFromStorage } from '../utils/localStorage';
-import { Assignment } from '../types';
+import { getAssignmentsFromStorage, getSubmissionsFromStorage } from '../utils/localStorage';
+import { Assignment, Submission } from '../types';
 
 // Teacher dashboard page component
 const TeacherDashboard: React.FC = () => {
-  const [selectedSubmission, setSelectedSubmission] = useState(mockSubmissions[0]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
 
-  // Load assignments from local storage on component mount
+  // Load assignments and submissions from local storage on component mount
   useEffect(() => {
     const storedAssignments = getAssignmentsFromStorage();
-    if (storedAssignments.length > 0) {
-      setAssignments(storedAssignments);
+    const storedSubmissions = getSubmissionsFromStorage();
+    
+    setAssignments(storedAssignments);
+    setSubmissions(storedSubmissions);
+    
+    if (storedSubmissions.length > 0) {
+      setSelectedSubmission(storedSubmissions[0]);
     }
   }, []);
 
   // Function to handle selecting a submission for evaluation
   const handleSelectSubmission = (submissionId: string) => {
-    const submission = mockSubmissions.find(sub => sub.id === submissionId);
+    const submission = submissions.find(sub => sub.id === submissionId);
     if (submission) {
       setSelectedSubmission(submission);
     }
@@ -47,17 +53,28 @@ const TeacherDashboard: React.FC = () => {
           
           <div className="stat-card">
             <div className="stat-title">Submissions</div>
-            <div className="stat-value">5</div>
+            <div className="stat-value">{submissions.length}</div>
           </div>
           
           <div className="stat-card">
             <div className="stat-title">Average Grade</div>
-            <div className="stat-value">84%</div>
+            <div className="stat-value">
+              {submissions.length > 0 ?
+                Math.round(
+                  submissions
+                    .filter(sub => sub.grade !== undefined)
+                    .reduce((acc, sub) => acc + (sub.grade || 0), 0) / 
+                    Math.max(1, submissions.filter(sub => sub.grade !== undefined).length)
+                ) : 0}%
+            </div>
           </div>
           
           <div className="stat-card">
             <div className="stat-title">Flagged Submissions</div>
-            <div className="stat-value" style={{ color: 'var(--danger-color)' }}>1</div>
+            <div className="stat-value" style={{ color: 'var(--danger-color)' }}>
+              {submissions.filter(sub => sub.status === 'flagged' || 
+                (sub.plagiarismPercentage !== undefined && sub.plagiarismPercentage >= 60)).length}
+            </div>
           </div>
         </div>
         
@@ -70,32 +87,50 @@ const TeacherDashboard: React.FC = () => {
             {/* Submission selector */}
             <div className="card">
               <h3 className="mb-4">Select Submission to Evaluate</h3>
-              <div className="form-group">
-                <select 
-                  className="form-input"
-                  value={selectedSubmission.id}
-                  onChange={(e) => handleSelectSubmission(e.target.value)}
-                >
-                  {mockSubmissions.map(sub => (
-                    <option key={sub.id} value={sub.id}>
-                      ID: {sub.id} - {sub.status}
-                      {sub.plagiarismPercentage && sub.plagiarismPercentage >= 60 ? ' (Flagged)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {submissions.length > 0 ? (
+                <div className="form-group">
+                  <select 
+                    className="form-input"
+                    value={selectedSubmission?.id || ''}
+                    onChange={(e) => handleSelectSubmission(e.target.value)}
+                  >
+                    {submissions.map(sub => {
+                      const assignment = assignments.find(a => a.id === sub.assignmentId);
+                      return (
+                        <option key={sub.id} value={sub.id}>
+                          {assignment ? assignment.title : 'Unknown Assignment'} - {sub.status}
+                          {sub.plagiarismPercentage && sub.plagiarismPercentage >= 60 ? ' (Flagged)' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              ) : (
+                <p>No submissions available for evaluation.</p>
+              )}
             </div>
           </div>
           
           {/* Right column */}
           <div style={{ flex: 1 }}>
-            <AssignmentEvaluation submission={selectedSubmission} />
+            {selectedSubmission && <AssignmentEvaluation submission={selectedSubmission} />}
           </div>
         </div>
         
         {/* Performance overview */}
         <div className="mt-8">
-          <PerformanceTable data={mockPerformanceData} />
+          <PerformanceTable data={submissions.map(sub => {
+            const assignment = assignments.find(a => a.id === sub.assignmentId);
+            return {
+              studentId: sub.studentId,
+              studentName: `Student ${sub.studentId}`,
+              assignment: assignment ? assignment.title : 'Unknown Assignment',
+              grade: sub.grade,
+              plagiarismPercentage: sub.plagiarismPercentage,
+              submissionStatus: sub.status,
+              submissionDate: sub.submissionDate
+            };
+          })} />
         </div>
       </div>
       
