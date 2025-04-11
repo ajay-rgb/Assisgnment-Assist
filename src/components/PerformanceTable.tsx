@@ -51,59 +51,55 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({ data }) => {
   };
 
   return (
-    <div className="card">
-      <h3 className="mb-4">Class Performance Overview</h3>
-      
-      <div style={{ overflowX: 'auto' }}>
-        <table className="table">
-          <thead>
-            <tr>
-              <th onClick={() => handleSort('studentName')} style={{ cursor: 'pointer' }}>
-                Student Name {sortField === 'studentName' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </th>
-              <th onClick={() => handleSort('assignment')} style={{ cursor: 'pointer' }}>
-                Assignment {sortField === 'assignment' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </th>
-              <th onClick={() => handleSort('grade')} style={{ cursor: 'pointer' }}>
-                Grade {sortField === 'grade' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </th>
-              <th onClick={() => handleSort('plagiarismPercentage')} style={{ cursor: 'pointer' }}>
-                Plagiarism {sortField === 'plagiarismPercentage' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </th>
-              <th onClick={() => handleSort('submissionStatus')} style={{ cursor: 'pointer' }}>
-                Status {sortField === 'submissionStatus' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </th>
-              <th onClick={() => handleSort('submissionDate')} style={{ cursor: 'pointer' }}>
-                Submission Date {sortField === 'submissionDate' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </th>
+    <div style={{ overflowX: 'auto' }}>
+      <table className="table">
+        <thead>
+          <tr>
+            <th onClick={() => handleSort('studentName')} style={{ cursor: 'pointer' }}>
+              Student Name {sortField === 'studentName' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </th>
+            <th onClick={() => handleSort('assignment')} style={{ cursor: 'pointer' }}>
+              Assignment {sortField === 'assignment' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </th>
+            <th onClick={() => handleSort('grade')} style={{ cursor: 'pointer' }}>
+              Grade {sortField === 'grade' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </th>
+            <th onClick={() => handleSort('plagiarismPercentage')} style={{ cursor: 'pointer' }}>
+              Plagiarism {sortField === 'plagiarismPercentage' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </th>
+            <th onClick={() => handleSort('submissionStatus')} style={{ cursor: 'pointer' }}>
+              Status {sortField === 'submissionStatus' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </th>
+            <th onClick={() => handleSort('submissionDate')} style={{ cursor: 'pointer' }}>
+              Submission Date {sortField === 'submissionDate' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedData.map((item, index) => (
+            <tr key={`${item.studentId}-${item.assignment}-${index}`}>
+              <td>{item.studentName}</td>
+              <td>{item.assignment}</td>
+              <td>{item.grade !== undefined ? item.grade : '-'}</td>
+              <td>
+                {item.plagiarismPercentage !== undefined ? (
+                  <PlagiarismIndicator percentage={item.plagiarismPercentage} />
+                ) : '-'}
+              </td>
+              <td>
+                <span className={`badge ${getStatusBadgeClass(item.submissionStatus)}`}>
+                  {item.submissionStatus.charAt(0).toUpperCase() + item.submissionStatus.slice(1)}
+                </span>
+              </td>
+              <td>
+                {item.submissionDate 
+                  ? new Date(item.submissionDate).toLocaleDateString() 
+                  : '-'}
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {sortedData.map((item, index) => (
-              <tr key={`${item.studentId}-${item.assignment}-${index}`}>
-                <td>{item.studentName}</td>
-                <td>{item.assignment}</td>
-                <td>{item.grade !== undefined ? item.grade : '-'}</td>
-                <td>
-                  {item.plagiarismPercentage !== undefined ? (
-                    <PlagiarismIndicator percentage={item.plagiarismPercentage} />
-                  ) : '-'}
-                </td>
-                <td>
-                  <span className={`badge ${getStatusBadgeClass(item.submissionStatus)}`}>
-                    {item.submissionStatus.charAt(0).toUpperCase() + item.submissionStatus.slice(1)}
-                  </span>
-                </td>
-                <td>
-                  {item.submissionDate 
-                    ? new Date(item.submissionDate).toLocaleDateString() 
-                    : '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };

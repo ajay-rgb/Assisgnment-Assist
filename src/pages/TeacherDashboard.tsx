@@ -6,7 +6,7 @@ import AssignmentUpload from '../components/AssignmentUpload';
 import AssignmentEvaluation from '../components/AssignmentEvaluation';
 import PerformanceTable from '../components/PerformanceTable';
 import { getAssignmentsFromStorage, getSubmissionsFromStorage } from '../utils/localStorage';
-import { Assignment, Submission } from '../types';
+import { Assignment, Submission, StudentPerformance } from '../types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +46,20 @@ const TeacherDashboard: React.FC = () => {
       description: "You can now evaluate this submission.",
     });
   };
+  
+  // Performance data for the table
+  const performanceData: StudentPerformance[] = submissions.map(sub => {
+    const assignment = assignments.find(a => a.id === sub.assignmentId);
+    return {
+      studentId: sub.studentId,
+      studentName: `Student ${sub.studentId}`,
+      assignment: assignment ? assignment.title : 'Unknown Assignment',
+      grade: sub.grade,
+      plagiarismPercentage: sub.plagiarismPercentage,
+      submissionStatus: sub.status,
+      submissionDate: sub.submissionDate
+    };
+  });
 
   return (
     <div>
@@ -56,38 +70,9 @@ const TeacherDashboard: React.FC = () => {
           <h1 className="dashboard-title">Teacher Dashboard</h1>
         </div>
         
-        {/* Dashboard tiles */}
-        <div className="dashboard-grid">
-          <div className="stat-card">
-            <div className="stat-title">Total Assignments</div>
-            <div className="stat-value">{assignments.length}</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-title">Submissions</div>
-            <div className="stat-value">{submissions.length}</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-title">Average Grade</div>
-            <div className="stat-value">
-              {submissions.length > 0 ?
-                Math.round(
-                  submissions
-                    .filter(sub => sub.grade !== undefined)
-                    .reduce((acc, sub) => acc + (sub.grade || 0), 0) / 
-                    Math.max(1, submissions.filter(sub => sub.grade !== undefined).length)
-                ) : 0}%
-            </div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-title">Flagged Submissions</div>
-            <div className="stat-value" style={{ color: 'var(--danger-color)' }}>
-              {submissions.filter(sub => sub.status === 'flagged' || 
-                (sub.plagiarismPercentage !== undefined && sub.plagiarismPercentage >= 60)).length}
-            </div>
-          </div>
+        {/* Assignment Upload moved to top */}
+        <div className="mt-6 mb-8">
+          <AssignmentUpload />
         </div>
         
         {/* Main content */}
@@ -146,10 +131,6 @@ const TeacherDashboard: React.FC = () => {
                 <p>No submissions available for evaluation.</p>
               )}
             </div>
-            
-            <div className="mt-6">
-              <AssignmentUpload />
-            </div>
           </div>
           
           {/* Right column - Evaluation */}
@@ -170,20 +151,47 @@ const TeacherDashboard: React.FC = () => {
           </div>
         </div>
         
-        {/* Performance overview */}
+        {/* Performance overview with stats moved here */}
         <div className="mt-8">
-          <PerformanceTable data={submissions.map(sub => {
-            const assignment = assignments.find(a => a.id === sub.assignmentId);
-            return {
-              studentId: sub.studentId,
-              studentName: `Student ${sub.studentId}`,
-              assignment: assignment ? assignment.title : 'Unknown Assignment',
-              grade: sub.grade,
-              plagiarismPercentage: sub.plagiarismPercentage,
-              submissionStatus: sub.status,
-              submissionDate: sub.submissionDate
-            };
-          })} />
+          <div className="card">
+            <h3 className="mb-4">Class Performance Overview</h3>
+            
+            {/* Dashboard tiles moved to performance section */}
+            <div className="dashboard-grid mb-6">
+              <div className="stat-card">
+                <div className="stat-title">Total Assignments</div>
+                <div className="stat-value">{assignments.length}</div>
+              </div>
+              
+              <div className="stat-card">
+                <div className="stat-title">Submissions</div>
+                <div className="stat-value">{submissions.length}</div>
+              </div>
+              
+              <div className="stat-card">
+                <div className="stat-title">Average Grade</div>
+                <div className="stat-value">
+                  {submissions.length > 0 ?
+                    Math.round(
+                      submissions
+                        .filter(sub => sub.grade !== undefined)
+                        .reduce((acc, sub) => acc + (sub.grade || 0), 0) / 
+                        Math.max(1, submissions.filter(sub => sub.grade !== undefined).length)
+                    ) : 0}%
+                </div>
+              </div>
+              
+              <div className="stat-card">
+                <div className="stat-title">Flagged Submissions</div>
+                <div className="stat-value" style={{ color: 'var(--danger-color)' }}>
+                  {submissions.filter(sub => sub.status === 'flagged' || 
+                    (sub.plagiarismPercentage !== undefined && sub.plagiarismPercentage >= 60)).length}
+                </div>
+              </div>
+            </div>
+            
+            <PerformanceTable data={performanceData} />
+          </div>
         </div>
       </div>
       
