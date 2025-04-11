@@ -7,32 +7,44 @@ import AssignmentEvaluation from '../components/AssignmentEvaluation';
 import PerformanceTable from '../components/PerformanceTable';
 import { getAssignmentsFromStorage, getSubmissionsFromStorage } from '../utils/localStorage';
 import { Assignment, Submission } from '../types';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 // Teacher dashboard page component
 const TeacherDashboard: React.FC = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const { toast } = useToast();
 
   // Load assignments and submissions from local storage on component mount
   useEffect(() => {
-    const storedAssignments = getAssignmentsFromStorage();
-    const storedSubmissions = getSubmissionsFromStorage();
+    const loadData = () => {
+      const storedAssignments = getAssignmentsFromStorage();
+      const storedSubmissions = getSubmissionsFromStorage();
+      
+      setAssignments(storedAssignments);
+      setSubmissions(storedSubmissions);
+    };
+
+    loadData();
     
-    setAssignments(storedAssignments);
-    setSubmissions(storedSubmissions);
+    // Set up an interval to refresh data regularly
+    const intervalId = setInterval(loadData, 5000);
     
-    if (storedSubmissions.length > 0) {
-      setSelectedSubmission(storedSubmissions[0]);
-    }
+    // Cleanup on unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   // Function to handle selecting a submission for evaluation
-  const handleSelectSubmission = (submissionId: string) => {
-    const submission = submissions.find(sub => sub.id === submissionId);
-    if (submission) {
-      setSelectedSubmission(submission);
-    }
+  const handleSelectSubmission = (submission: Submission) => {
+    setSelectedSubmission(submission);
+    
+    toast({
+      title: "Submission Selected",
+      description: "You can now evaluate this submission.",
+    });
   };
 
   return (
@@ -79,41 +91,82 @@ const TeacherDashboard: React.FC = () => {
         </div>
         
         {/* Main content */}
-        <div className="flex gap-8" style={{ flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
-          {/* Left column */}
+        <div className="flex gap-8 mt-8" style={{ flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
+          {/* Left column - Submission List */}
           <div style={{ flex: 1 }}>
-            <AssignmentUpload />
-            
-            {/* Submission selector */}
             <div className="card">
-              <h3 className="mb-4">Select Submission to Evaluate</h3>
+              <h3 className="mb-4">Student Submissions</h3>
+              
               {submissions.length > 0 ? (
-                <div className="form-group">
-                  <select 
-                    className="form-input"
-                    value={selectedSubmission?.id || ''}
-                    onChange={(e) => handleSelectSubmission(e.target.value)}
-                  >
-                    {submissions.map(sub => {
-                      const assignment = assignments.find(a => a.id === sub.assignmentId);
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Assignment</TableHead>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {submissions.map(submission => {
+                      const assignment = assignments.find(a => a.id === submission.assignmentId);
                       return (
-                        <option key={sub.id} value={sub.id}>
-                          {assignment ? assignment.title : 'Unknown Assignment'} - {sub.status}
-                          {sub.plagiarismPercentage && sub.plagiarismPercentage >= 60 ? ' (Flagged)' : ''}
-                        </option>
+                        <TableRow 
+                          key={submission.id}
+                          className={selectedSubmission?.id === submission.id ? 'bg-muted' : ''}
+                        >
+                          <TableCell>{assignment?.title || 'Unknown'}</TableCell>
+                          <TableCell>Student {submission.studentId}</TableCell>
+                          <TableCell>
+                            <span className={`badge ${
+                              submission.status === 'graded' ? 'badge-success' : 
+                              submission.status === 'flagged' ? 'badge-danger' : 
+                              'badge-warning'
+                            }`}>
+                              {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                            </span>
+                          </TableCell>
+                          <TableCell>{new Date(submission.submissionDate).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSelectSubmission(submission)}
+                            >
+                              Grade
+                            </Button>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
-                  </select>
-                </div>
+                  </TableBody>
+                </Table>
               ) : (
                 <p>No submissions available for evaluation.</p>
               )}
             </div>
+            
+            <div className="mt-6">
+              <AssignmentUpload />
+            </div>
           </div>
           
-          {/* Right column */}
+          {/* Right column - Evaluation */}
           <div style={{ flex: 1 }}>
-            {selectedSubmission && <AssignmentEvaluation submission={selectedSubmission} />}
+            {selectedSubmission ? (
+              <AssignmentEvaluation 
+                submission={selectedSubmission}
+                assignments={assignments}
+              />
+            ) : (
+              <div className="card">
+                <h3 className="mb-4">Assignment Evaluation</h3>
+                <p className="text-center py-8 text-gray-500">
+                  Select a submission from the list to evaluate
+                </p>
+              </div>
+            )}
           </div>
         </div>
         

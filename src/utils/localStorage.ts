@@ -86,3 +86,9 @@ export const getSubmissionsForAssignment = (assignmentId: string): Submission[] 
   const submissions = getSubmissionsFromStorage();
   return submissions.filter(s => s.assignmentId === assignmentId);
 };
+
+// Function to get ungraded submissions
+export const getUngradedSubmissions = (): Submission[] => {
+  const submissions = getSubmissionsFromStorage();
+  return submissions.filter(s => s.status !== 'graded' && s.status !== 'flagged');
+};

@@ -26,6 +26,7 @@ export interface Submission {
   content?: string;
   fileUrl?: string;
   grade?: number;
+  feedback?: string;
   plagiarismPercentage?: number;
   status: 'pending' | 'submitted' | 'graded' | 'flagged';
 }
