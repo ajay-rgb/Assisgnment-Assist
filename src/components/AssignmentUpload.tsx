@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { addAssignmentToStorage } from '../utils/localStorage';
 
 // Component for teachers to upload new assignments
 const AssignmentUpload: React.FC = () => {
@@ -17,8 +18,19 @@ const AssignmentUpload: React.FC = () => {
     // Simulate API call to upload assignment
     setIsUploading(true);
     
-    // Mock API response after 1 second
+    // Create new assignment object
+    const newAssignment = {
+      id: `assign_${Date.now()}`, // Generate unique ID
+      title,
+      description,
+      deadline,
+      teacherId: 'teacher1', // Mock teacher ID
+      createdAt: new Date().toISOString(),
+    };
+    
+    // Save to local storage
     setTimeout(() => {
+      addAssignmentToStorage(newAssignment);
       setIsUploading(false);
       setUploadSuccess(true);
       

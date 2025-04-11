@@ -1,15 +1,25 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AssignmentUpload from '../components/AssignmentUpload';
 import AssignmentEvaluation from '../components/AssignmentEvaluation';
 import PerformanceTable from '../components/PerformanceTable';
 import { mockSubmissions, mockPerformanceData } from '../utils/mockData';
+import { getAssignmentsFromStorage } from '../utils/localStorage';
+import { Assignment } from '../types';
 
 // Teacher dashboard page component
 const TeacherDashboard: React.FC = () => {
   const [selectedSubmission, setSelectedSubmission] = useState(mockSubmissions[0]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+
+  // Load assignments from local storage on component mount
+  useEffect(() => {
+    const storedAssignments = getAssignmentsFromStorage();
+    if (storedAssignments.length > 0) {
+      setAssignments(storedAssignments);
+    }
+  }, []);
 
   // Function to handle selecting a submission for evaluation
   const handleSelectSubmission = (submissionId: string) => {
@@ -32,7 +42,7 @@ const TeacherDashboard: React.FC = () => {
         <div className="dashboard-grid">
           <div className="stat-card">
             <div className="stat-title">Total Assignments</div>
-            <div className="stat-value">3</div>
+            <div className="stat-value">{assignments.length}</div>
           </div>
           
           <div className="stat-card">
