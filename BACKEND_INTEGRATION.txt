@@ -1,7 +1,5 @@
 
-# Grade Guardian - Backend Integration Guide
-
-This document outlines how to integrate a Flask backend with the Grade Guardian frontend React application.
+This document outlines how to integrate a Flask backend with the frontend React application.
 
 ## Overview of the Frontend Structure
 
