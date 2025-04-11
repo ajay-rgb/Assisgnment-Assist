@@ -75,83 +75,80 @@ const TeacherDashboard: React.FC = () => {
           <AssignmentUpload />
         </div>
         
-        {/* Main content */}
-        <div className="flex gap-8 mt-8" style={{ flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
-          {/* Left column - Submission List */}
-          <div style={{ flex: 1 }}>
-            <div className="card">
-              <h3 className="mb-4">Student Submissions</h3>
-              
-              {submissions.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Assignment</TableHead>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {submissions.map(submission => {
-                      const assignment = assignments.find(a => a.id === submission.assignmentId);
-                      return (
-                        <TableRow 
-                          key={submission.id}
-                          className={selectedSubmission?.id === submission.id ? 'bg-muted' : ''}
-                        >
-                          <TableCell>{assignment?.title || 'Unknown'}</TableCell>
-                          <TableCell>Student {submission.studentId}</TableCell>
-                          <TableCell>
-                            <span className={`badge ${
-                              submission.status === 'graded' ? 'badge-success' : 
-                              submission.status === 'flagged' ? 'badge-danger' : 
-                              'badge-warning'
-                            }`}>
-                              {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
-                            </span>
-                          </TableCell>
-                          <TableCell>{new Date(submission.submissionDate).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleSelectSubmission(submission)}
-                            >
-                              Grade
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              ) : (
-                <p>No submissions available for evaluation.</p>
-              )}
-            </div>
-          </div>
-          
-          {/* Right column - Evaluation */}
-          <div style={{ flex: 1 }}>
-            {selectedSubmission ? (
-              <AssignmentEvaluation 
-                submission={selectedSubmission}
-                assignments={assignments}
-              />
+        {/* Student Submissions - Full Width */}
+        <div className="mb-8">
+          <div className="card">
+            <h3 className="mb-4">Student Submissions</h3>
+            
+            {submissions.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Assignment</TableHead>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {submissions.map(submission => {
+                    const assignment = assignments.find(a => a.id === submission.assignmentId);
+                    return (
+                      <TableRow 
+                        key={submission.id}
+                        className={selectedSubmission?.id === submission.id ? 'bg-muted' : ''}
+                      >
+                        <TableCell>{assignment?.title || 'Unknown'}</TableCell>
+                        <TableCell>Student {submission.studentId}</TableCell>
+                        <TableCell>
+                          <span className={`badge ${
+                            submission.status === 'graded' ? 'badge-success' : 
+                            submission.status === 'flagged' ? 'badge-danger' : 
+                            'badge-warning'
+                          }`}>
+                            {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                          </span>
+                        </TableCell>
+                        <TableCell>{new Date(submission.submissionDate).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSelectSubmission(submission)}
+                          >
+                            Grade
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             ) : (
-              <div className="card">
-                <h3 className="mb-4">Assignment Evaluation</h3>
-                <p className="text-center py-8 text-gray-500">
-                  Select a submission from the list to evaluate
-                </p>
-              </div>
+              <p>No submissions available for evaluation.</p>
             )}
           </div>
         </div>
         
-        {/* Performance overview with stats moved here */}
+        {/* Assignment Evaluation - Full Width */}
+        <div className="mb-8">
+          {selectedSubmission ? (
+            <AssignmentEvaluation 
+              submission={selectedSubmission}
+              assignments={assignments}
+            />
+          ) : (
+            <div className="card">
+              <h3 className="mb-4">Assignment Evaluation</h3>
+              <p className="text-center py-8 text-gray-500">
+                Select a submission from the list to evaluate
+              </p>
+            </div>
+          )}
+        </div>
+        
+        {/* Performance overview with stats */}
         <div className="mt-8">
           <div className="card">
             <h3 className="mb-4">Class Performance Overview</h3>
