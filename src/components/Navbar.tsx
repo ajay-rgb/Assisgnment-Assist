@@ -7,7 +7,7 @@ const Navbar: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="container flex justify-between items-center">
-        <Link to="/" className="nav-logo">Grade Guardian</Link>
+        <Link to="/" className="nav-logo">💻</Link>
         <div className="nav-links">
           <Link to="/" className="nav-link">Home</Link>
           <Link to="/about" className="nav-link">About Us</Link>

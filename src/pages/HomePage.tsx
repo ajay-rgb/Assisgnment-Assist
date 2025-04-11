@@ -22,7 +22,7 @@ const HomePage: React.FC = () => {
         <div className="hero-section">
           {/* Left side content */}
           <div className="hero-content">
-            <h1 className="hero-title">Assignment Checker</h1>
+            <h1 className="hero-title">Assignment Assist</h1>
             <p className="hero-subtitle">
               Automated grading and plagiarism detection for students and teachers.
             </p>

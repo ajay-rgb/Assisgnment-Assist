@@ -8,8 +8,8 @@
 }
 
 :root {
-  --primary-color: #3b82f6;
-  --primary-hover: #2563eb;
+  --primary-color: #1b1b1b;
+  --primary-hover: blueviolet;
   --secondary-color: #64748b;
   --accent-color: #22c55e;
   --danger-color: #ef4444;
