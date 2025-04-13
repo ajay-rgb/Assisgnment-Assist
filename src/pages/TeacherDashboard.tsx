@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -45,6 +44,52 @@ const TeacherDashboard: React.FC = () => {
       title: "Submission Selected",
       description: "You can now evaluate this submission.",
     });
+  };
+
+  const handleClearAssignments = async () => {
+    if (!window.confirm("Are you sure you want to erase all assignments? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3001/assignments", {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to clear assignments.");
+      }
+
+      toast({
+        title: "Success",
+        description: "All assignments have been erased.",
+        variant: "default",
+      });
+
+      // Clear local storage to avoid stale data
+      localStorage.removeItem("assignment-assist-assignments");
+      localStorage.removeItem("assignment-assist-submissions");
+
+      // Clear the state immediately to avoid showing stale data
+      setAssignments([]);
+      setSubmissions([]);
+
+      // Refresh the assignments and submissions list by fetching from the backend
+      const refreshedAssignments = await fetch("http://localhost:3001/assignments").then(res => res.json());
+      setAssignments(refreshedAssignments);
+
+      // Optionally, fetch submissions if needed
+      const refreshedSubmissions = []; // Adjust this if submissions are stored in the backend
+      setSubmissions(refreshedSubmissions);
+    } catch (error) {
+      console.error("Error clearing assignments:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to clear assignments.",
+        variant: "destructive",
+      });
+    }
   };
   
   // Performance data for the table
@@ -189,6 +234,12 @@ const TeacherDashboard: React.FC = () => {
             
             <PerformanceTable data={performanceData} />
           </div>
+        </div>
+
+        <div className="mt-4 text-center">
+          <Button variant="destructive" className="bg-red-500 hover:bg-red-600" onClick={handleClearAssignments}>
+            Erase All Assignments
+          </Button>
         </div>
       </div>
       

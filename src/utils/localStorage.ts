@@ -1,13 +1,12 @@
-
 // Local Storage utility functions for storing and retrieving data
 
 import { Assignment, Submission } from '../types';
 
 // Keys for local storage
 export const STORAGE_KEYS = {
-  ASSIGNMENTS: 'grade-guardian-assignments',
-  SUBMISSIONS: 'grade-guardian-submissions',
-  USERS: 'grade-guardian-users',
+  ASSIGNMENTS: 'assignment-assist-assignments',
+  SUBMISSIONS: 'assignment-assist-submissions',
+  USERS: 'assignment-assist-users',
 };
 
 // Function to get assignments from local storage

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment Assist</title>
+    <link rel="stylesheet" href="index.css">
+    
+</head>
+<body>
+      <div id="main">
+        <div id="nav">
+            <h1>💻</h1>
+            <div id="nav-right">
+                <h3>Home</h3>
+                <h3>About Us</h3>
+                <h3>Contact</h3>
+            </div>
+        </div>
+    
+        <div id="header">
+            <h1>Assignment</h1>
+            <h1 style="color: blueviolet;">Assist</h1>
+            <br>
+            <h3>Get your assignments done in a click</h3>
+           
+
+        </div>
+
+        
+
+        <div id="btn">
+            <!-- <h3>Login</h3> -->
+            <br>
+            <h1 class="button"><a href="teacher.html" target="_blank">Teacher</a></h1>
+            <h1 class="button"><a href="student.html" target="_blank">Student</a></h1>
+        </div>
+       
+
+        <div id="footer">
+            <h5>Assist 2025</h5>
+        </div>
+
+
+
+      </div>
+</body>
+</html>
+
+<!-- CSS -->
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+:root{
+   --primary:red;
+   --secondary:blue;
+    --tertiary:yellow;
+    --quaternary:green;
+    --quinary:purple;
+}
+body{
+    background: #f8f8f8;
+    font-family:Helvetica, sans-serif;
+}
+#main{
+    height: 100vh;
+    width: 100%;
+    background:#f8f8f8;
+    display: grid;
+    grid-template-rows: repeat(6,1fr);
+    grid-template-columns: repeat(5,1fr);
+    grid-template-areas: 
+    "n n n n n"
+    "h h h l l"
+    "h h h l l"
+    "h h h l l"
+    "h h h l l"
+    "f f f f f"
+    ;
+}
+#nav{
+    grid-area: n;
+    /* background: var(--primary); */
+    /* border: 1px solid black; */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
+#nav-right{
+    height: 5vh;
+    width: 50vh;
+    display: flex;
+    background: white;
+    border-radius: 50px;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    font-size: small;
+    border: 1px solid black;
+    margin-right: 10px;
+}
+#nav-right h3:hover{
+    color: blueviolet;
+    transition: ease 0.2s;
+    cursor: pointer;
+}
+#header{
+    grid-area: h;
+    /* border: 1px solid black; */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0 20px;
+}
+#header h1{
+    font-size: 4rem;
+}
+#header>img{
+    object-fit: cover;
+    object-position: top;
+    scale: .5;
+}
+
+#btn{
+    grid-area: l;
+    /* background: var(--quaternary); */
+    /* border: 1px solid black; */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.button{
+    background: rgb(183, 39, 255);
+    color: white;
+    border: 1px solid black;
+    border-radius: 50px;
+    padding: 5px 15px;
+    margin: 10px;
+    cursor: pointer;
+    font-weight: 400;
+    font-size: 2rem;
+}
+.button:hover{
+    background: black;
+    border: 1px solid white;
+    transition: ease 0.2s;
+    box-shadow: inset 0 0 10px black;
+    color: white;
+}
+a{
+    text-decoration: none;
+    color: white;
+}
+#footer{
+    width: 100%;
+    grid-area: f;
+    background: rgb(42, 42, 42);
+    color: rgba(255, 255, 255, 0.755);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 20px;
+    font-weight: 300;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}

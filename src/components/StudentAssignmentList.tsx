@@ -1,9 +1,14 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Assignment, Submission } from '../types';
 import PlagiarismIndicator from './PlagiarismIndicator';
-import { addSubmissionToStorage } from '../utils/localStorage';
+import { getAssignmentsFromStorage, saveAssignmentsToStorage, addSubmissionToStorage } from '../utils/localStorage';
 import { useToast } from "@/hooks/use-toast";
+
+// Define a type for plagiarism results
+interface PlagiarismResult {
+  plagiarised: boolean;
+  similarity: number;
+}
 
 interface StudentAssignmentListProps {
   assignments: Assignment[];
@@ -13,14 +18,23 @@ interface StudentAssignmentListProps {
 
 // Component for displaying assignments to students
 const StudentAssignmentList: React.FC<StudentAssignmentListProps> = ({ 
-  assignments, 
+  assignments: initialAssignments, 
   submissions = [], 
   isPending = false 
 }) => {
+  const [assignments, setAssignments] = useState<Assignment[]>(initialAssignments);
   const [selectedFile, setSelectedFile] = useState<{ [key: string]: File | null }>({});
   const [uploading, setUploading] = useState<{ [key: string]: boolean }>({});
   const [uploadSuccess, setUploadSuccess] = useState<{ [key: string]: boolean }>({});
   const { toast } = useToast();
+
+  // Fetch assignments from local storage when the component loads
+  useEffect(() => {
+    const storedAssignments = getAssignmentsFromStorage();
+    if (storedAssignments.length > 0) {
+      setAssignments(storedAssignments);
+    }
+  }, []);
 
   // Handle file selection
   const handleFileChange = (assignmentId: string, file: File | null) => {
@@ -31,36 +45,65 @@ const StudentAssignmentList: React.FC<StudentAssignmentListProps> = ({
   };
 
   // Handle file submission
-  const handleSubmit = (assignmentId: string) => {
+  const handleSubmit = async (assignmentId: string) => {
+    const file = selectedFile[assignmentId];
+    if (!file) return;
+
     setUploading(prev => ({ ...prev, [assignmentId]: true }));
-    
-    // Create submission object
-    const newSubmission: Submission = {
-      id: `submission_${Date.now()}`,
-      assignmentId: assignmentId,
-      studentId: 'student1', // Mock student ID
-      submissionDate: new Date().toISOString(),
-      fileUrl: selectedFile[assignmentId]?.name || 'unknown',
-      status: 'submitted',
-    };
-    
-    // Add submission to localStorage
-    setTimeout(() => {
-      addSubmissionToStorage(newSubmission);
-      setUploading(prev => ({ ...prev, [assignmentId]: false }));
-      setUploadSuccess(prev => ({ ...prev, [assignmentId]: true }));
-      
-      toast({
-        title: "Assignment Submitted",
-        description: "Your assignment has been submitted successfully.",
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:3001/assignments', {
+        method: 'POST',
+        body: formData
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to upload assignment');
+      }
+
+      const plagiarismResults: PlagiarismResult[] = await response.json();
       
-      // Reset after 3 seconds
+      // Create submission object with plagiarism results
+      const newSubmission: Submission = {
+        id: `submission_${Date.now()}`,
+        assignmentId: assignmentId,
+        studentId: 'student1', // Mock student ID
+        submissionDate: new Date().toISOString(),
+        fileUrl: file.name,
+        status: plagiarismResults.some((r) => r.plagiarised) ? 'flagged' : 'submitted',
+        plagiarismPercentage: Math.max(...plagiarismResults.map((r) => r.similarity * 100)),
+      };
+
+      addSubmissionToStorage(newSubmission);
+      setUploadSuccess(prev => ({ ...prev, [assignmentId]: true }));
+
+      toast({
+        title: newSubmission.status === 'flagged' ? "Warning: High Similarity Detected" : "Assignment Submitted",
+        description: newSubmission.status === 'flagged' 
+          ? `Your submission shows ${newSubmission.plagiarismPercentage.toFixed(1)}% similarity with existing submissions.`
+          : "Your assignment has been submitted successfully.",
+        variant: newSubmission.status === 'flagged' ? "destructive" : "default",
+      });
+
       setTimeout(() => {
         setUploadSuccess(prev => ({ ...prev, [assignmentId]: false }));
         setSelectedFile(prev => ({ ...prev, [assignmentId]: null }));
       }, 3000);
-    }, 1500);
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to submit assignment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(prev => ({ ...prev, [assignmentId]: false }));
+    }
   };
 
   // Find submission for an assignment
