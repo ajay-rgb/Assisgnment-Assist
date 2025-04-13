@@ -237,7 +237,7 @@ const TeacherDashboard: React.FC = () => {
         </div>
 
         <div className="mt-4 text-center">
-          <Button variant="destructive" className="bg-red-500 hover:bg-red-600" onClick={handleClearAssignments}>
+          <Button variant="destructive" className="bg-red-500 hover:bg-red-600 text-white rounded-md" onClick={handleClearAssignments}>
             Erase All Assignments
           </Button>
         </div>
