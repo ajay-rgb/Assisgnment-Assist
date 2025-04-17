@@ -8,13 +8,26 @@ import { getAssignmentsFromStorage, getSubmissionsFromStorage } from '../utils/l
 import { Assignment, Submission, StudentPerformance } from '../types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { useToast } from "@/hooks/use-toast";
+import { CheckboxGroup, Checkbox, CheckboxGroupItem } from "@/components/ui/checkbox";
 
 // Teacher dashboard page component
 const TeacherDashboard: React.FC = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [topic, setTopic] = useState('');
+  const [difficulty, setDifficulty] = useState('medium');
+  const [questionTypes, setQuestionTypes] = useState<string[]>([]);
+  const [numQuestions, setNumQuestions] = useState(2);
+  const [generatedQuestions, setGeneratedQuestions] = useState('');
+
   const { toast } = useToast();
 
   // Load assignments and submissions from local storage on component mount
@@ -106,6 +119,37 @@ const TeacherDashboard: React.FC = () => {
     };
   });
 
+  const handleGenerateQuestions = async () => {
+    if (!topic || questionTypes.length === 0) {
+      toast({
+        title: "Input Error",
+        description: "Please enter a topic and select at least one question type.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3001/generate-questions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ topic, difficulty, types: questionTypes, count: numQuestions }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setGeneratedQuestions(data.questions);
+      } else {
+        throw new Error(data.error || "Failed to generate questions.");
+      }
+    } catch (error) {
+      console.error("Error generating questions:", error);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
   return (
     <div>
       <Navbar />
@@ -119,6 +163,86 @@ const TeacherDashboard: React.FC = () => {
         <div className="mt-6 mb-8">
           <AssignmentUpload />
         </div>
+
+        {/* Question Generation Section */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Generate Assignment Questions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="topic">Topic</Label>
+                <Input
+                  type="text"
+                  id="topic"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="Enter the assignment topic"
+                />
+              </div>
+              <div>
+                <Label htmlFor="difficulty">Difficulty</Label>
+                <Select value={difficulty} onValueChange={setDifficulty}>
+                  <SelectTrigger id="difficulty">
+                    <SelectValue placeholder="Select difficulty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="easy">Easy</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="hard">Hard</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="mt-4">
+              <Label>Question Types</Label>
+              <CheckboxGroup onValueChange={setQuestionTypes} defaultValue={questionTypes}>
+                <div className="flex flex-wrap gap-2">
+                  <Checkbox id="conceptual" value="Conceptual" />
+                  <Label htmlFor="conceptual" className="ml-2">Conceptual</Label>
+                  <Checkbox id="numerical" value="Numerical" />
+                  <Label htmlFor="numerical" className="ml-2">Numerical</Label>
+                  <Checkbox id="application" value="Application" />
+                  <Label htmlFor="application" className="ml-2">Application</Label>
+                </div>
+              </CheckboxGroup>
+            </div>
+            <div className="mt-4">
+              <Label htmlFor="numQuestions">Number of Questions per Type: {numQuestions}</Label>
+              <Slider
+                id="numQuestions"
+                min={1}
+                max={5}
+                step={1}
+                value={[numQuestions]}
+                onValueChange={(value) => setNumQuestions(value[0])}
+                className="w-full"
+              />
+            </div>
+            <Button
+              className="mt-6"
+              onClick={handleGenerateQuestions}
+              disabled={!topic || questionTypes.length === 0}
+            >
+              Generate Questions
+            </Button>
+            {generatedQuestions && (
+              <div className="mt-6">
+                <h4 className="font-semibold mb-2">Generated Questions:</h4>
+                <p>{generatedQuestions}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+
+
+
+
+
+
+
         
         {/* Student Submissions - Full Width */}
         <div className="mb-8">

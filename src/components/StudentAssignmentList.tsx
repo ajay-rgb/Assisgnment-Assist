@@ -50,22 +50,30 @@ const StudentAssignmentList: React.FC<StudentAssignmentListProps> = ({
     if (!file) return;
 
     setUploading(prev => ({ ...prev, [assignmentId]: true }));
-
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
+      const formData = new FormData();
+      formData.append('file', file);
+
       const response = await fetch('http://localhost:3001/assignments', {
         method: 'POST',
+        headers: {
+          // No need to set Content-Type, FormData sets it automatically
+        },
         body: formData
       });
+
+      if (response.status === 204) {
+        // Handle 204 No Content as success
+        return [];
+      }
+
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to upload assignment');
       }
 
-      const plagiarismResults: PlagiarismResult[] = await response.json();
+      const plagiarismResults = await response.json();
       
       // Create submission object with plagiarism results
       const newSubmission: Submission = {
